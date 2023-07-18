@@ -6,6 +6,19 @@
       nixpkgs.lib.genAttrs supportedSystems (system:
         f system (import nixpkgs {inherit system;}));
   in {
+    packages = forAllSystems (
+      system: pkgs: rec {
+        webtty = pkgs.buildGoModule rec {
+          name = "webtty";
+          version = "flake-latest";
+          src = ./.;
+          vendorHash = "sha256-qhQ+n54AHrD7b4gac6yV7d7A6SqTeyOYQhcENlje/gY=";
+        };
+
+        default = webtty;
+      }
+    );
+
     devShells = forAllSystems (
       system: pkgs: {
         default = pkgs.mkShell {
