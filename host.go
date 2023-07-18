@@ -13,7 +13,6 @@ import (
 
 	"github.com/kr/pty"
 	"github.com/maxmcd/webtty/pkg/sd"
-	"github.com/mitchellh/colorstring"
 	"github.com/pion/webrtc/v3"
 )
 
@@ -27,15 +26,23 @@ type hostSession struct {
 	tmux           bool
 }
 
+func logInfo(msg string) {
+	l := log.New(os.Stderr, "", 0)
+	l.Println(msg)
+}
+
+func logError(err error) {
+	l := log.New(os.Stderr, "", 0)
+	l.Printf("%s\n", err)
+}
+
 func (hs *hostSession) dataChannelOnOpen() func() {
 	return func() {
-		colorstring.Println("[bold]Terminal session started:")
-
 		cmd := exec.Command(hs.cmd[0], hs.cmd[1:]...)
 		var err error
 		hs.ptmx, err = pty.Start(cmd)
 		if err != nil {
-			log.Println(err)
+			logError(err)
 			hs.errChan <- err
 			return
 		}
@@ -43,13 +50,13 @@ func (hs *hostSession) dataChannelOnOpen() func() {
 
 		if !hs.nonInteractive {
 			if err = hs.makeRawTerminal(); err != nil {
-				log.Println(err)
+				logError(err)
 				hs.errChan <- err
 				return
 			}
 			go func() {
 				if _, err = io.Copy(hs.ptmx, os.Stdin); err != nil {
-					log.Println(err)
+					logError(err)
 				}
 			}()
 		}
@@ -70,20 +77,20 @@ func (hs *hostSession) dataChannelOnOpen() func() {
 				if err == io.EOF {
 					err = nil
 				} else {
-					log.Println(err)
+					logError(err)
 				}
 				hs.errChan <- err
 				return
 			}
 			if !hs.nonInteractive {
 				if _, err = os.Stdout.Write(buf[0:nr]); err != nil {
-					log.Println(err)
+					logError(err)
 					hs.errChan <- err
 					return
 				}
 			}
 			if err = hs.dc.Send(buf[0:nr]); err != nil {
-				log.Println(err)
+				logError(err)
 				hs.errChan <- err
 				return
 			}
@@ -105,7 +112,7 @@ func (hs *hostSession) dataChannelOnMessage() func(payload webrtc.DataChannelMes
 				var msg []string
 				err := json.Unmarshal(p.Data, &msg)
 				if len(msg) == 0 {
-					log.Println(err)
+					logError(err)
 					hs.errChan <- err
 				}
 				if msg[0] == "stdin" {
@@ -115,7 +122,7 @@ func (hs *hostSession) dataChannelOnMessage() func(payload webrtc.DataChannelMes
 					}
 					_, err := hs.ptmx.Write([]byte(msg[1]))
 					if err != nil {
-						log.Println(err)
+						logError(err)
 						hs.errChan <- err
 					}
 					return
@@ -125,7 +132,7 @@ func (hs *hostSession) dataChannelOnMessage() func(payload webrtc.DataChannelMes
 					_ = json.Unmarshal(p.Data, &size)
 					ws, err := pty.GetsizeFull(hs.ptmx)
 					if err != nil {
-						log.Println(err)
+						logError(err)
 						hs.errChan <- err
 						return
 					}
@@ -138,7 +145,7 @@ func (hs *hostSession) dataChannelOnMessage() func(payload webrtc.DataChannelMes
 					}
 
 					if err := pty.Setsize(hs.ptmx, ws); err != nil {
-						log.Println(err)
+						logError(err)
 						hs.errChan <- err
 					}
 					return
@@ -155,7 +162,7 @@ func (hs *hostSession) dataChannelOnMessage() func(payload webrtc.DataChannelMes
 		} else {
 			_, err := hs.ptmx.Write(p.Data)
 			if err != nil {
-				log.Println(err)
+				logError(err)
 				hs.errChan <- err
 			}
 		}
@@ -183,14 +190,14 @@ func (hs *hostSession) createOffer() (err error) {
 	// Create unused DataChannel, the offer doesn't implictly have
 	// any media sections otherwise
 	if _, err = hs.pc.CreateDataChannel("offerer-channel", nil); err != nil {
-		log.Println(err)
+		logError(err)
 		return
 	}
 
 	// Create an offer to send to the browser
 	offer, err := hs.pc.CreateOffer(nil)
 	if err != nil {
-		log.Println(err)
+		logError(err)
 		return
 	}
 
@@ -199,7 +206,7 @@ func (hs *hostSession) createOffer() (err error) {
 
 	err = hs.pc.SetLocalDescription(offer)
 	if err != nil {
-		log.Println(err)
+		logError(err)
 		return
 	}
 
@@ -221,9 +228,9 @@ func (hs *hostSession) run() (err error) {
 	if err = hs.init(); err != nil {
 		return
 	}
-	colorstring.Printf("[bold]Setting up a WebTTY connection.\n\n")
+	logInfo("setup")
 	if hs.oneWay {
-		colorstring.Printf(
+		logInfo(
 			"Warning: One-way connections rely on a third party to connect. " +
 				"More info here: https://github.com/maxmcd/webtty#one-way-connections\n\n")
 	}
@@ -233,29 +240,26 @@ func (hs *hostSession) run() (err error) {
 	}
 
 	// Output the offer in base64 so we can paste it in browser
-	colorstring.Printf("[bold]Connection ready. Here is your connection data:\n\n")
-	fmt.Printf("%s\n\n", sd.Encode(hs.offer))
-	colorstring.Printf(`[bold]Paste it in the terminal after the webtty command` +
-		"\n[bold]Or in a browser: [reset]https://maxmcd.github.io/webtty/\n\n")
+	fmt.Println(sd.Encode(hs.offer))
 
 	if hs.oneWay == false {
-		colorstring.Println("[bold]When you have the answer, paste it below and hit enter:")
+		logInfo("When you have the answer, paste it below and hit enter:")
 		// Wait for the answer to be pasted
 		hs.answer.Sdp, err = hs.mustReadStdin()
 		if err != nil {
-			log.Println(err)
+			logError(err)
 			return
 		}
-		fmt.Println("Answer recieved, connecting...")
+		logInfo("Answer recieved, connecting...")
 	} else {
 		body, err := pollForResponse(hs.offer.TenKbSiteLoc)
 		if err != nil {
-			log.Println(err)
+			logError(err)
 			return err
 		}
 		hs.answer, err = sd.Decode(body)
 		if err != nil {
-			log.Println(err)
+			logError(err)
 			return err
 		}
 		hs.answer.Key = hs.offer.Key
@@ -276,7 +280,7 @@ func (hs *hostSession) setHostRemoteDescriptionAndWait() (err error) {
 
 	// Apply the answer as the remote description
 	if err = hs.pc.SetRemoteDescription(answer); err != nil {
-		log.Println(err)
+		logError(err)
 		return
 	}
 
