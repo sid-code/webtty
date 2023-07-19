@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -228,29 +229,52 @@ func (hs *hostSession) run() (err error) {
 	if err = hs.init(); err != nil {
 		return
 	}
-	logInfo("setup")
-	if hs.oneWay {
-		logInfo(
-			"Warning: One-way connections rely on a third party to connect. " +
-				"More info here: https://github.com/maxmcd/webtty#one-way-connections\n\n")
-	}
 
 	if err = hs.createOffer(); err != nil {
 		return
 	}
 
-	// Output the offer in base64 so we can paste it in browser
-	fmt.Println(sd.Encode(hs.offer))
-
 	if hs.oneWay == false {
-		logInfo("When you have the answer, paste it below and hit enter:")
 		// Wait for the answer to be pasted
-		hs.answer.Sdp, err = hs.mustReadStdin()
-		if err != nil {
-			logError(err)
-			return
-		}
-		logInfo("Answer recieved, connecting...")
+		http.Handle("/", http.FileServer(http.Dir("./web-client/dist")))
+
+		http.HandleFunc("/getkey", func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(200)
+			fmt.Fprintf(w, "%s", sd.Encode(hs.offer))
+		})
+
+		http.HandleFunc("/conn", func(w http.ResponseWriter, req *http.Request) {
+			if req.Method != "POST" {
+				w.WriteHeader(405)
+				fmt.Fprintf(w, "Invalid method")
+				return
+			}
+			sdpc, err := io.ReadAll(req.Body)
+			if err != nil {
+				w.WriteHeader(400)
+				fmt.Fprintf(w, "ERR READ BODY %s\n", err)
+				return
+			}
+			sdp, err := sd.Decode(string(sdpc))
+			if err != nil {
+				w.WriteHeader(400)
+				fmt.Fprintf(w, "ERR DECODE %s\n", err)
+				return
+			}
+			hs.answer.Sdp = sdp.Sdp
+			logInfo("Answer recieved, connecting...")
+
+			w.WriteHeader(200)
+			fmt.Fprintf(w, "SUCCESS")
+			go hs.setHostRemoteDescriptionAndWait()
+
+		})
+		http.ListenAndServe(":1235", nil)
+		//hs.answer.Sdp, err = hs.mustReadStdin()
+		//if err != nil {
+		//	logError(err)
+		//	return
+		//}
 	} else {
 		body, err := pollForResponse(hs.offer.TenKbSiteLoc)
 		if err != nil {
@@ -268,7 +292,7 @@ func (hs *hostSession) run() (err error) {
 			return err
 		}
 	}
-	return hs.setHostRemoteDescriptionAndWait()
+	return nil
 }
 
 func (hs *hostSession) setHostRemoteDescriptionAndWait() (err error) {

@@ -27,7 +27,9 @@
             gopls
             nodejs
             nodePackages.npm
+            nodePackages.prettier
             emacsPackages.go-mode
+            watchexec
           ];
         };
       }
