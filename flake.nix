@@ -24,8 +24,10 @@
         default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
             go
+            gopls
             nodejs
             nodePackages.npm
+            emacsPackages.go-mode
           ];
         };
       }
