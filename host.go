@@ -235,7 +235,6 @@ func (hs *hostSession) run() (err error) {
 	}
 
 	if hs.oneWay == false {
-		// Wait for the answer to be pasted
 		http.Handle("/", http.FileServer(http.Dir("./web-client/dist")))
 
 		http.HandleFunc("/getkey", func(w http.ResponseWriter, req *http.Request) {
