@@ -1,3 +1,5 @@
+github.com/BurntSushi/toml v1.3.2 h1:o7IhLm0Msx3BaB+n3Ag7L8EVlByGnpq14C4YWiu/gL8=
+github.com/BurntSushi/toml v1.3.2/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/btcsuite/btcutil v0.0.0-20190316010144-3ac1210f4b38 h1:GbQHMJ2u/geMPV1tbN7i7zARSoPAPuXWa44V0KYvJXU=
 github.com/btcsuite/btcutil v0.0.0-20190316010144-3ac1210f4b38/go.mod h1:+5NJ2+qvTyV9exUAL/rxXi3DcLg2Ts+ymUAY5y4NvMg=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
