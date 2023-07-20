@@ -19,6 +19,7 @@ type Config struct {
 	NonInteractive bool   // default true
 	StunServer     string // default stun:stun.l.google.com:19302
 	Cmd            string // default bash
+	HttpPort       uint16 // default 1235
 }
 
 func serve(config Config) {
@@ -93,7 +94,10 @@ func serve(config Config) {
 		go hs.setHostRemoteDescriptionAndWait()
 
 	})
-	http.ListenAndServe(":1235", nil)
+
+	listenAddr := fmt.Sprintf(":%d", config.HttpPort)
+	log.Printf("Listening for HTTP on %s\n", listenAddr)
+	http.ListenAndServe(listenAddr, nil)
 }
 
 func main() {
