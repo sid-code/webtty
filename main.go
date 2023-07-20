@@ -87,7 +87,7 @@ func serve(config Config) {
 			return
 		}
 		hs.answer.Sdp = sdp.Sdp
-		logInfo("Answer recieved, connecting...")
+		log.Printf("Answer recieved, connecting...\n")
 
 		w.WriteHeader(200)
 		fmt.Fprintf(w, "SUCCESS")
@@ -101,6 +101,7 @@ func serve(config Config) {
 }
 
 func main() {
+	log.Printf("Starting up")
 	if len(os.Args) <= 1 {
 		fmt.Fprintf(os.Stderr, "First argument needs to be a config file\n")
 		os.Exit(1)
@@ -118,7 +119,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Hello %v\n", config)
+	log.Printf("Your config is %+v\n", config)
 	if config.Verbose {
 		log.SetFlags(log.LstdFlags | log.Lshortfile)
 	} else {
