@@ -8,8 +8,8 @@
   },
   "main": "src/app.ts",
   "scripts": {
-    "build": "npm run go-build && vite build ./src",
-    "go-build": "mkdir -p ./dist/ && touch ./dist/foo && rm ./dist/* && GOOS=js GOARCH=wasm go build -o ./dist/main.wasm ./src",
+    "build": "vite build ./src && npm run go-build",
+    "go-build": "mkdir -p ./dist/ && touch ./dist/foo && GOOS=js GOARCH=wasm go build -o ./dist/main.wasm ./src",
     "serve": "vite ./src",
     "test": "echo notests",
     "deploy": "npm run build && gh-pages -d dist"
