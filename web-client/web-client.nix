@@ -27,10 +27,11 @@
     src = ./.;
     buildInputs = [nodejs nodePackages.npm go];
     buildPhase = ''
-      ln -s ${nodeDependencies}/lib/node_modules ./node_modules
+      cp -r ${nodeDependencies}/lib/node_modules ./node_modules
       export PATH="${nodeDependencies}/bin:$PATH"
 
-      sed -i "s:/usr/bin/env.\+:${nodejs}/bin/node:g" ./node_modules/.bin/vite
+      substituteInPlace ./node_modules/.bin/vite \
+        --replace "/usr/bin/env node" "${nodejs}/bin/node"
 
       # Build the distribution bundle in "dist"
       vite build ./src
