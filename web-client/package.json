@@ -4,12 +4,12 @@
   "description": "webtty web client",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/maxmcd/webtty.git"
+    "url": "git+https://github.com/sid-code/webtty.git"
   },
   "main": "src/app.ts",
   "scripts": {
     "build": "vite build ./src && npm run go-build",
-    "go-build": "mkdir -p ./dist/ && touch ./dist/foo && GOOS=js GOARCH=wasm go build -o ./dist/main.wasm ./src",
+    "go-build": "mkdir -p ./dist/ && touch ./dist/foo && GOOS=js GOARCH=wasm go build -o ./dist/main.wasm ./",
     "serve": "vite ./src",
     "test": "echo notests",
     "deploy": "npm run build && gh-pages -d dist"
