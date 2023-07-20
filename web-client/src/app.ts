@@ -6,8 +6,18 @@ import * as fit from "xterm/src/addons/fit/fit";
 import "xterm/dist/xterm.css";
 import "xterm/dist/addons/fullscreen/fullscreen.css";
 
-// imports "Go"
-import { encode, decode, Go } from "./wasm_exec.js";
+declare class Go {
+  importObject: WebAssembly.Imports;
+  run(inst: WebAssembly.Instance): void;
+}
+declare function decode(
+  val: string,
+  cb: (res: string, err: string) => void,
+): void;
+declare function encode(
+  val: string,
+  cb: (res: string, err: string) => void,
+): void;
 
 Terminal.applyAddon(attach);
 Terminal.applyAddon(fullscreen);
