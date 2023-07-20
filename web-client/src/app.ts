@@ -31,18 +31,32 @@ if (!WebAssembly.instantiateStreaming) {
   };
 }
 
-async function waitForDecode(key: string) {
-  if (typeof decode !== "undefined") {
-    startSession(key);
-  } else {
-    setTimeout(waitForDecode, 250);
-  }
-}
+function poll<T>(
+  condition: (v: T) => boolean,
+  value: () => T,
+  pollIntervalMs = 100,
+  timeoutMs = 60000,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    var interval: any; // TODO: what is this?
+    var elapsed = 0;
+    const check = () => {
+      const v = value();
+      if (condition(v)) {
+        window.clearInterval(interval);
+        resolve(v);
+        return;
+      }
 
-window.setTimeout(() => {
-  console.log(encode);
-  console.log(Go);
-}, 1000);
+      elapsed += pollIntervalMs;
+      if (elapsed > timeoutMs) {
+        reject();
+      }
+    };
+
+    interval = window.setInterval(check, pollIntervalMs);
+  });
+}
 
 const go = new Go();
 WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(
@@ -52,23 +66,26 @@ WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(
   },
 );
 
-const startSession = (data: string) => {
-  decode(data, (Sdp: string, err: string) => {
+async function startSession(pc: RTCPeerConnection, data: string) {
+  decode(data, async (Sdp: string, err: string) => {
     if (err != "") {
       console.log(err);
+      return;
     }
-    console.log("SDP k", data);
-    pc.setRemoteDescription(
-      new RTCSessionDescription({
-        type: "offer",
-        sdp: Sdp,
-      }),
-    ).catch(log);
-    pc.createAnswer()
+    await pc
+      .setRemoteDescription(
+        new RTCSessionDescription({
+          type: "offer",
+          sdp: Sdp,
+        }),
+      )
+      .catch(log);
+    await pc
+      .createAnswer()
       .then((d) => pc.setLocalDescription(d))
       .catch(log);
   });
-};
+}
 
 const term = new Terminal();
 term.open(document.getElementById("terminal"));
@@ -79,52 +96,62 @@ window.onresize = () => {
 };
 term.write("Welcome to the WebTTY web client.\n\r");
 
-let pc = new RTCPeerConnection({
-  iceServers: [
-    {
-      urls: "stun:stun.l.google.com:19302",
-    },
-  ],
-});
+function makePeerConnection(key: string): RTCPeerConnection {
+  const pc = new RTCPeerConnection({
+    iceServers: [
+      {
+        urls: "stun:stun.l.google.com:19302",
+      },
+    ],
+  });
+
+  pc.onsignalingstatechange = (_) => log("SIGNAL " + pc.signalingState);
+  pc.oniceconnectionstatechange = (_) => log("ICE " + pc.iceConnectionState);
+  pc.onicecandidate = (event) => {
+    if (event.candidate === null) {
+      console.log("ICE CANDIDADO");
+      encode(
+        pc.localDescription?.sdp ?? "lol",
+        (encoded: string, err: string) => {
+          if (err != "") {
+            console.log(err);
+            return;
+          }
+          fetch(`conn?key=${key}`, { method: "POST", body: encoded }).catch(
+            log,
+          );
+        },
+      );
+    }
+  };
+  pc.onnegotiationneeded = (e) => console.log(e);
+
+  return pc;
+}
 
 let log = (msg: string) => {
   term.write(msg + "\n\r");
 };
 
-pc.onnegotiationneeded = (e) => console.log(e);
 try {
   (async () => {
-    const key = await (await fetch("init", { method: "POST" })).text();
-    waitForDecode(key);
+    const key = (await (await fetch("init", { method: "POST" })).text()).trim();
+    await poll(
+      () => typeof decode !== "undefined",
+      async () => {
+        const pc = makePeerConnection(key);
+        const sendChannel = pc.createDataChannel("data");
+        sendChannel.onclose = () => console.log("sendChannel has closed");
+        sendChannel.onopen = () => {
+          term.reset();
+          term.terminadoAttach(sendChannel);
+          sendChannel.send(JSON.stringify(["set_size", term.rows, term.cols]));
+          console.log("sendChannel has opened");
+        };
 
-    let sendChannel = pc.createDataChannel("data");
-    sendChannel.onclose = () => console.log("sendChannel has closed");
-    sendChannel.onopen = () => {
-      term.reset();
-      term.terminadoAttach(sendChannel);
-      sendChannel.send(JSON.stringify(["set_size", term.rows, term.cols]));
-      console.log("sendChannel has opened");
-    };
-    // sendChannel.onmessage = e => {}
-
-    pc.onsignalingstatechange = (_) => log("SIGNAL " + pc.signalingState);
-    pc.oniceconnectionstatechange = (_) => log("ICE " + pc.iceConnectionState);
-    pc.onicecandidate = (event) => {
-      if (event.candidate === null) {
-        encode(
-          pc.localDescription?.sdp ?? "lol",
-          (encoded: string, err: string) => {
-            if (err != "") {
-              console.log(err);
-              return;
-            }
-            fetch(`conn?key=${key}`, { method: "POST", body: encoded }).catch(
-              log,
-            );
-          },
-        );
-      }
-    };
+        await startSession(pc, key);
+      },
+    );
   })();
 } catch (err) {
   console.log(err);
