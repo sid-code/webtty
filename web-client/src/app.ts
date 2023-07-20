@@ -32,7 +32,7 @@ if (!WebAssembly.instantiateStreaming) {
 }
 
 function poll<T>(
-  condition: (v: T) => boolean,
+  condition: () => boolean,
   value: () => T,
   pollIntervalMs = 100,
   timeoutMs = 60000,
@@ -41,10 +41,9 @@ function poll<T>(
     var interval: any; // TODO: what is this?
     var elapsed = 0;
     const check = () => {
-      const v = value();
-      if (condition(v)) {
+      if (condition()) {
         window.clearInterval(interval);
-        resolve(v);
+        resolve(value());
         return;
       }
 
