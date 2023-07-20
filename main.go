@@ -37,10 +37,18 @@ func serve(config Config) {
 			fmt.Fprintf(w, "Invalid method")
 			return
 		}
+		var key string
 		hs := hostSession{
 			oneWay:         config.OneWay,
 			cmd:            []string{config.Cmd},
 			nonInteractive: config.NonInteractive,
+			cleanupHook: func() {
+				// Clean up the entry in the connection map
+				log.Printf("A session was disconnected.\n")
+				mutex.Lock()
+				delete(conns, key)
+				mutex.Unlock()
+			},
 		}
 		hs.stunServers = []string{config.StunServer}
 
@@ -49,7 +57,7 @@ func serve(config Config) {
 			fmt.Fprintf(w, "Quitting with an unexpected error: \"%s\"\n", err)
 		}
 
-		key := sd.Encode(hs.offer)
+		key = sd.Encode(hs.offer)
 		mutex.Lock()
 		conns[key] = hs
 		mutex.Unlock()
@@ -91,6 +99,8 @@ func serve(config Config) {
 		}
 		hs.answer.Sdp = sdp.Sdp
 		log.Printf("Answer recieved, connecting...\n")
+
+		log.Printf("Connection count: %d\n", len(conns))
 
 		w.WriteHeader(200)
 		fmt.Fprintf(w, "SUCCESS")

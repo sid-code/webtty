@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/kr/pty"
-	"github.com/sid-code/webtty/pkg/sd"
 	"github.com/pion/webrtc/v3"
+	"github.com/sid-code/webtty/pkg/sd"
 )
 
 type hostSession struct {
@@ -24,6 +24,7 @@ type hostSession struct {
 	ptmx           *os.File
 	ptmxReady      bool
 	tmux           bool
+	cleanupHook    func()
 }
 
 func logInfo(msg string) {
@@ -169,11 +170,18 @@ func (hs *hostSession) dataChannelOnMessage() func(payload webrtc.DataChannelMes
 	}
 }
 
+func (hs *hostSession) dataChannelOnClose() func() {
+	return func() {
+		hs.cleanupHook()
+	}
+}
+
 func (hs *hostSession) onDataChannel() func(dc *webrtc.DataChannel) {
 	return func(dc *webrtc.DataChannel) {
 		hs.dc = dc
 		dc.OnOpen(hs.dataChannelOnOpen())
 		dc.OnMessage(hs.dataChannelOnMessage())
+		dc.OnClose(hs.dataChannelOnClose())
 	}
 }
 
