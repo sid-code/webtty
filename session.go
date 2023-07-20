@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/sid-code/webtty/pkg/sd"
 	"github.com/pion/webrtc/v3"
+	"github.com/sid-code/webtty/pkg/sd"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
