@@ -8,9 +8,9 @@
   },
   "main": "src/app.ts",
   "scripts": {
-    "build": "npm run go-build && parcel build src/index.html --public-url .",
+    "build": "npm run go-build && vite build ./src",
     "go-build": "mkdir -p ./dist/ && touch ./dist/foo && rm ./dist/* && GOOS=js GOARCH=wasm go build -o ./dist/main.wasm ./src",
-    "serve": "parcel serve src/index.html",
+    "serve": "vite ./src",
     "test": "echo notests",
     "deploy": "npm run build && gh-pages -d dist"
   },
@@ -19,7 +19,7 @@
   "dependencies": {
     "@babel/runtime-corejs2": "^7.12.5",
     "gh-pages": "^2.0.1",
-    "parcel-bundler": "^1.12.5",
+    "vite": "^4.4.4",
     "xterm": "3.8.1"
   },
   "devDependencies": {
