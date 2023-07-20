@@ -8,7 +8,7 @@
   in {
     packages = forAllSystems (
       system: pkgs: rec {
-        webtty = pkgs.buildGoModule rec {
+        webtty = pkgs.buildGoModule {
           name = "webtty";
           version = "flake-latest";
           src = ./.;
