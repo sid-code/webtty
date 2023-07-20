@@ -1,13 +1,13 @@
-import Terminal from "xterm/src/xterm.ts";
-import * as attach from "./attach.ts";
-import * as fullscreen from "xterm/src/addons/fullscreen/fullscreen.ts";
-import * as fit from "xterm/src/addons/fit/fit.ts";
+import { Terminal } from "xterm";
+import * as attach from "./attach";
+import * as fullscreen from "xterm/src/addons/fullscreen/fullscreen";
+import * as fit from "xterm/src/addons/fit/fit";
 
 import "xterm/dist/xterm.css";
 import "xterm/dist/addons/fullscreen/fullscreen.css";
 
 // imports "Go"
-import "./wasm_exec.js";
+import { encode, decode, Go } from "./wasm_exec.js";
 
 Terminal.applyAddon(attach);
 Terminal.applyAddon(fullscreen);
@@ -21,13 +21,18 @@ if (!WebAssembly.instantiateStreaming) {
   };
 }
 
-async function waitForDecode() {
+async function waitForDecode(key: string) {
   if (typeof decode !== "undefined") {
-    startSession(await (await fetch("getkey")).text());
+    startSession(key);
   } else {
     setTimeout(waitForDecode, 250);
   }
 }
+
+window.setTimeout(() => {
+  console.log(encode);
+  console.log(Go);
+}, 1000);
 
 const go = new Go();
 WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(
@@ -37,22 +42,12 @@ WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(
   },
 );
 
-const create10kbFile = (path: string, body: string): void =>
-  fetch("https://up.10kb.site/" + path, {
-    method: "POST",
-    body: body,
-  })
-    .then((resp) => resp.text())
-    .then((resp) => {});
-
 const startSession = (data: string) => {
-  decode(data, (Sdp, tenKbSiteLoc, err) => {
+  decode(data, (Sdp: string, err: string) => {
     if (err != "") {
       console.log(err);
     }
-    if (tenKbSiteLoc != "") {
-      TenKbSiteLoc = tenKbSiteLoc;
-    }
+    console.log("SDP k", data);
     pc.setRemoteDescription(
       new RTCSessionDescription({
         type: "offer",
@@ -64,8 +59,6 @@ const startSession = (data: string) => {
       .catch(log);
   });
 };
-
-let TenKbSiteLoc = null;
 
 const term = new Terminal();
 term.open(document.getElementById("terminal"));
@@ -84,56 +77,45 @@ let pc = new RTCPeerConnection({
   ],
 });
 
-let log = (msg) => {
+let log = (msg: string) => {
   term.write(msg + "\n\r");
 };
 
-let sendChannel = pc.createDataChannel("data");
-sendChannel.onclose = () => console.log("sendChannel has closed");
-sendChannel.onopen = () => {
-  term.reset();
-  term.terminadoAttach(sendChannel);
-  sendChannel.send(JSON.stringify(["set_size", term.rows, term.cols]));
-  console.log("sendChannel has opened");
-};
-// sendChannel.onmessage = e => {}
-
-pc.onsignalingstatechange = (e) => log(pc.signalingState);
-pc.oniceconnectionstatechange = (e) => log(pc.iceConnectionState);
-pc.onicecandidate = (event) => {
-  if (event.candidate === null) {
-    if (TenKbSiteLoc == null) {
-      encode(pc.localDescription.sdp, (encoded, err) => {
-        if (err != "") {
-          console.log(err);
-        }
-        fetch("conn", { method: "POST", body: encoded }).catch(log);
-      });
-    } else {
-      term.write("Waiting for connection...");
-      encode(pc.localDescription.sdp, (encoded, err) => {
-        if (err != "") {
-          console.log(err);
-        }
-        create10kbFile(TenKbSiteLoc, encoded);
-      });
-    }
-  }
-};
-
 pc.onnegotiationneeded = (e) => console.log(e);
-
-window.sendMessage = () => {
-  let message = document.getElementById("message").value;
-  if (message === "") {
-    return alert("Message must not be empty");
-  }
-
-  sendChannel.send(message);
-};
-
 try {
-  waitForDecode();
+  (async () => {
+    const key = await (await fetch("init", { method: "POST" })).text();
+    waitForDecode(key);
+
+    let sendChannel = pc.createDataChannel("data");
+    sendChannel.onclose = () => console.log("sendChannel has closed");
+    sendChannel.onopen = () => {
+      term.reset();
+      term.terminadoAttach(sendChannel);
+      sendChannel.send(JSON.stringify(["set_size", term.rows, term.cols]));
+      console.log("sendChannel has opened");
+    };
+    // sendChannel.onmessage = e => {}
+
+    pc.onsignalingstatechange = (_) => log("SIGNAL " + pc.signalingState);
+    pc.oniceconnectionstatechange = (_) => log("ICE " + pc.iceConnectionState);
+    pc.onicecandidate = (event) => {
+      if (event.candidate === null) {
+        encode(
+          pc.localDescription?.sdp ?? "lol",
+          (encoded: string, err: string) => {
+            if (err != "") {
+              console.log(err);
+              return;
+            }
+            fetch(`conn?key=${key}`, { method: "POST", body: encoded }).catch(
+              log,
+            );
+          },
+        );
+      }
+    };
+  })();
 } catch (err) {
   console.log(err);
 }

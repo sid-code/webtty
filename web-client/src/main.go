@@ -41,21 +41,21 @@ func encode(this js.Value, i []js.Value) interface{} {
 }
 
 func decode(this js.Value, i []js.Value) interface{} {
-	sdp, tkbsl, err := func() (string, string, string) {
+	sdp, err := func() (string, string) {
 		offer, err := sd.Decode(i[0].String())
 		if err != nil {
-			return "", "", err.Error()
+			return "", err.Error()
 		}
 		if offer.Key != "" {
 			key = offer.Key
 			nonce = offer.Nonce
 			if err := offer.Decrypt(); err != nil {
-				return "", "", err.Error()
+				return "", err.Error()
 			}
 		}
-		return offer.Sdp, offer.TenKbSiteLoc, ""
+		return offer.Sdp, ""
 	}()
-	i[1].Invoke(sdp, tkbsl, err)
+	i[1].Invoke(sdp, err)
 	return nil
 }
 
