@@ -1,4 +1,4 @@
-module github.com/maxmcd/webtty
+module github.com/sid-code/webtty
 
 go 1.12
 

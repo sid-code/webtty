@@ -3,7 +3,7 @@ package main
 import (
 	"syscall/js"
 
-	"github.com/maxmcd/webtty/pkg/sd"
+	"github.com/sid-code/webtty/pkg/sd"
 )
 
 func main() {

@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/BurntSushi/toml"
-	"github.com/maxmcd/webtty/pkg/sd"
+	"github.com/sid-code/webtty/pkg/sd"
 )
 
 type Config struct {

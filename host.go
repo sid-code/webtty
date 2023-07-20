@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/kr/pty"
-	"github.com/maxmcd/webtty/pkg/sd"
+	"github.com/sid-code/webtty/pkg/sd"
 	"github.com/pion/webrtc/v3"
 )
 
