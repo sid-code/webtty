@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -233,65 +232,7 @@ func (hs *hostSession) run() (err error) {
 	if err = hs.createOffer(); err != nil {
 		return
 	}
-
-	if hs.oneWay == false {
-		http.Handle("/", http.FileServer(http.Dir("./web-client/dist")))
-
-		http.HandleFunc("/getkey", func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(200)
-			fmt.Fprintf(w, "%s", sd.Encode(hs.offer))
-		})
-
-		http.HandleFunc("/conn", func(w http.ResponseWriter, req *http.Request) {
-			if req.Method != "POST" {
-				w.WriteHeader(405)
-				fmt.Fprintf(w, "Invalid method")
-				return
-			}
-			sdpc, err := io.ReadAll(req.Body)
-			if err != nil {
-				w.WriteHeader(400)
-				fmt.Fprintf(w, "ERR READ BODY %s\n", err)
-				return
-			}
-			sdp, err := sd.Decode(string(sdpc))
-			if err != nil {
-				w.WriteHeader(400)
-				fmt.Fprintf(w, "ERR DECODE %s\n", err)
-				return
-			}
-			hs.answer.Sdp = sdp.Sdp
-			logInfo("Answer recieved, connecting...")
-
-			w.WriteHeader(200)
-			fmt.Fprintf(w, "SUCCESS")
-			go hs.setHostRemoteDescriptionAndWait()
-
-		})
-		http.ListenAndServe(":1235", nil)
-		//hs.answer.Sdp, err = hs.mustReadStdin()
-		//if err != nil {
-		//	logError(err)
-		//	return
-		//}
-	} else {
-		body, err := pollForResponse(hs.offer.TenKbSiteLoc)
-		if err != nil {
-			logError(err)
-			return err
-		}
-		hs.answer, err = sd.Decode(body)
-		if err != nil {
-			logError(err)
-			return err
-		}
-		hs.answer.Key = hs.offer.Key
-		hs.answer.Nonce = hs.offer.Nonce
-		if err = hs.answer.Decrypt(); err != nil {
-			return err
-		}
-	}
-	return nil
+	return
 }
 
 func (hs *hostSession) setHostRemoteDescriptionAndWait() (err error) {
