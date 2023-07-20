@@ -22,11 +22,14 @@ type Config struct {
 	HttpPort       uint16 // default 1235
 }
 
+var ServePath = "./web-client/dist"
+
 func serve(config Config) {
 	conns := make(map[string]hostSession)
 	mutex := &sync.RWMutex{}
 
-	http.Handle("/", http.FileServer(http.Dir("./web-client/dist")))
+	http.Handle("/", http.FileServer(http.Dir(ServePath)))
+	log.Printf("Serving from %v\n", ServePath)
 
 	http.HandleFunc("/init", func(w http.ResponseWriter, req *http.Request) {
 		if req.Method != "POST" {
@@ -112,6 +115,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to read config %s: %s\n", configFile, err)
 		os.Exit(1)
 	}
+
 	var config Config
 	_, err = toml.Decode(string(configData), &config)
 	if err != nil {
