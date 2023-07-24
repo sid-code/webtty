@@ -23,7 +23,7 @@ related to this somehow.
 
 ### Running
 
-Create a `config.toml` that contains the following:
+Create a `config.toml` that contains the following: (these contents can be found in `config.toml.example`).
 
 ```toml
 oneWay = false

@@ -1,0 +1,6 @@
+oneWay = false
+verbose = true
+nonInteractive = true
+stunServer = "stun:stun.l.google.com:19302"
+cmd = "bash"
+httpPort = 3247
