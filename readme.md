@@ -4,18 +4,17 @@
 WebTTY allows you to share a terminal session from your machine using
 WebRTC.
 
-This is a heavily modified version of
-[WebTTY](https://github.com/maxmcd/webtty) that focuses on the
-in-browser use case.
+This is a fork of [WebTTY](https://github.com/maxmcd/webtty) that
+caters to my use case. Some choices I made:
+
+  - Web-based frontends (to require zero setup on client machine)
+  - WebRTC with no TURN server (for minimal latency) 
+  - Config file over CLI arguments (no good reason, only because it
+    simplifies the code a little)
 
 ### Status
 
-There are a handful of bugs to fix, but everything works pretty well
-at the moment. Please open an issue if you find a bug.
-
-### Installation
-
-TODO
+This works pretty well (for me).
 
 ### Running
 
@@ -36,17 +35,10 @@ Then run:
 webtty config.toml
 ```
 
-Then open up `localhost:3247`. Add a reverse proxy and TLS.
+or with the flake output:
 
-
-### Terminal Size
-
-By default WebTTY forces the size of the client terminal. This means the host size can frequently render incorrectly. One way you can fix this is by using tmux:
-
-```bash
-tmux new-session -s shared
-# in another terminal
-webtty -ni -cmd tmux attach-session -t shared
+```shell
+nix run github:sid-code/webtty -- config.toml
 ```
-Tmux will now resize the session to the smallest terminal viewport.
 
+Then open up `localhost:3247`. Add a reverse proxy and TLS.
