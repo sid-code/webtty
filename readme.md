@@ -16,6 +16,11 @@ caters to my use case. Some choices I made:
 
 This works pretty well (for me).
 
+I mostly use this with `emacs -nw`. Sometimes emacs freezes. I don't
+know why or if it's related to this. It didn't freeze like that when I
+used [gotty](https://github.com/sorenisanerd/gotty), so I assume it's
+related to this somehow.
+
 ### Running
 
 Create a `config.toml` that contains the following:
