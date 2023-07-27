@@ -12,6 +12,7 @@ in {
     program = mkOption {
       type = types.package;
       description = "The webtty package to use.";
+      default = webtty;
     };
     config = mkOption {
       type = types.submodule {
