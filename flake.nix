@@ -1,6 +1,10 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-  outputs = {nixpkgs, ...}: let
+  outputs = {
+    self,
+    nixpkgs,
+    ...
+  }: let
     supportedSystems = ["x86_64-linux"];
     forAllSystems = f:
       nixpkgs.lib.genAttrs supportedSystems (system:
@@ -36,6 +40,10 @@
         default = webtty;
       }
     );
+
+    nixosModules.default =
+      import ./module.nix
+      self.packages.x86_64-linux.default;
 
     devShells = forAllSystems (
       system: pkgs: {
