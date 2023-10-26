@@ -50,6 +50,7 @@ in {
   config = mkIf cfg.enable {
     systemd.services.webtty = {
       wants = ["network.target"];
+      wantedBy = ["multi-user.target"];
       serviceConfig = {
         ExecStart = pkgs.writeShellScript "launcher" ''
           ${cfg.program}/bin/webtty ${
