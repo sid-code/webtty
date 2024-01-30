@@ -52,11 +52,14 @@ in {
       wants = ["network.target"];
       wantedBy = ["multi-user.target"];
       serviceConfig = {
-        ExecStart = pkgs.writeShellScript "launcher" ''
-          ${cfg.package}/bin/webtty ${
-            (pkgs.formats.toml {}).generate "config.toml" cfg.config
-          }
-        '';
+        # TODO: don't use writeShellApplication, it's too heavy
+        ExecStart = pkgs.writeShellApplication {
+          name = "launcher";
+          text = ''
+            webtty ${(pkgs.formats.toml {}).generate "config.toml" cfg.config}
+          '';
+          runtimeInputs = [cfg.package];
+        };
       };
     };
 
