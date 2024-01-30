@@ -9,7 +9,7 @@ webtty: {
 in {
   options.services.webtty = {
     enable = mkEnableOption "WebTTY";
-    program = mkOption {
+    package = mkOption {
       type = types.package;
       description = "The webtty package to use.";
       default = webtty;
@@ -53,7 +53,7 @@ in {
       wantedBy = ["multi-user.target"];
       serviceConfig = {
         ExecStart = pkgs.writeShellScript "launcher" ''
-          ${cfg.program}/bin/webtty ${
+          ${cfg.package}/bin/webtty ${
             (pkgs.formats.toml {}).generate "config.toml" cfg.config
           }
         '';
