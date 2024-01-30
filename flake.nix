@@ -19,7 +19,7 @@
           name = "webtty";
           version = "flake-latest";
           src = ./.;
-          ldflags = "-X 'main.ServePath=${webClient}'";
+          ldflags = ["-X 'main.ServePath=${webClient}'"];
           # by default, buildGoModule does a lot of magic
           # that isn't compatible with this repo
           # specifically, the thing where it tries to build all
